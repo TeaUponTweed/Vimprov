@@ -17,8 +17,6 @@ def _do_set_color_scheme_tmp(color_scheme_path, settings):
     if settings is None:
         settings = _load_settings()
     settings.set('color_scheme', color_scheme_path)
-    # sublime.save_settings('Preferences.sublime-settings')
-    # sublime.status_message('SelectColorScheme: ' + color_scheme_path)
 
 
 def _load_settings():
@@ -48,9 +46,6 @@ def do_toggle_vimprov(view):
 
 class ToggleVimprovCommand(sublime_plugin.WindowCommand):
     def run(self):
-        # print(sublime.settings())
         for w in sublime.windows():
                 for v in w.views():
                     do_toggle_vimprov(v)
-                    # print()
-                    # v.settings().set('vimprov', not v.settings().set('vimprov')
