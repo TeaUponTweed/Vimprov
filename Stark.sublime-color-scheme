@@ -1,0 +1,17 @@
+{
+    "name": "Stark Color Scheme",
+    "variables":
+    {
+        "red": "rgb(210, 0, 0)",
+        "black": "rgb(30,30,30)",
+        "white": "rgb(210, 210, 210)"
+    },
+    "globals":
+    {
+        "background": "var(black)",
+        "foreground": "var(white)",
+        "caret": "var(red)",
+        "selection": "var(red)",
+        "selection_foreground": "var(white)"
+    }
+}
