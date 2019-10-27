@@ -7,4 +7,8 @@
         "caption": "Vimprov: Exit Vimprov",
         "command": "exit_vimprov"
     }
+    {
+        "caption": "Vimprov: Toggle Vimprov",
+        "command": "toggle_vimprov"
+    }
 ]
