@@ -1,0 +1,10 @@
+[
+    {
+        "caption": "Vimprov: Enter Vimprov",
+        "command": "enter_vimprov"
+    },
+    {
+        "caption": "Vimprov: Exit Vimprov",
+        "command": "exit_vimprov"
+    }
+]
