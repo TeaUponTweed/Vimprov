@@ -1,14 +1,14 @@
 [
     {
-        "caption": "Vimprov: Enter Vimprov",
-        "command": "enter_vimprov"
-    },
-    {
-        "caption": "Vimprov: Exit Vimprov",
-        "command": "exit_vimprov"
+        "caption": "Vimprov: Go Stark",
+        "command": "stark"
     }
     {
-        "caption": "Vimprov: Toggle Vimprov",
-        "command": "toggle_vimprov"
+        "caption": "Vimprov: Go Unstark",
+        "command": "unstark"
+    }
+    {
+        "caption": "Vimprov: Enter Vimprov",
+        "command": "vimprov"
     }
 ]
