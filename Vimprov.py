@@ -42,6 +42,7 @@ def do_toggle_vimprov(view):
     settings.set('vimprov', vimprov)
     if vimprov:
         stark_color_theme_loc = settings.get('vimprov_stark_them')
+        VIMPROV_BUFFER = []
         if stark_color_theme_loc is None:
             stark_color_theme_loc = _get_path_to_scheme('Stark')
             settings.set('vimprov_stark_them', stark_color_theme_loc)
@@ -55,6 +56,7 @@ def do_toggle_vimprov(view):
         _do_set_color_scheme_tmp(stark_color_theme_loc, settings)
 
     else:
+        view.set_status('_vimprov', '')
         stark_color_theme_loc = settings.get('vimprov_stark_them')
         assert stark_color_theme_loc is not None
 
@@ -82,22 +84,61 @@ def do_toggle_vimprov(view):
 #     def on_query_context(self, key, operator, operand, match_all):
 #         print('wwoop', key)
 #         return True
+class VimpoveAction(object):
+    def __init__(self, repeat=None, verb=None, noun=None):
+        self.repeat = repeat
+        self.verb = verb
+        self.noun = noun
+    def process_key(self, key):
+        if key in '0123456789':
+            # handle repeat
+            if self.verb is None and self.noun is None:
+                if self.repeat is None:
+                    self.repeat = [key]
+                else:
+                    self.repeat += [key]
+            else:
+                if self.noun is None:
+                    self.nous = key
+                else:
+
+                    raise ValueError('Cannot use {} as a verb')
+    def has_repeat(self):
+        return self.repeat is not None
+
+    def has_verb(self):
+        return self.verb is not None
+
+    def has_noun(self):
+        return self.noun is not None
+
+    def fully_formed(self):
+        return self.has_verb() and self.has_noun()
+
 VIMPROV_BUFFER = []
 class ProcessVimprovArg(sublime_plugin.TextCommand):
     def run(self, edit, key):
         view = self.view
-        for region in view.sel():
-            if not region.empty():
-                # Get the selected text
-                s = view.substr(region)
-                print(s)
+        for sel in view.sel():
+            for line in view.lines(sel):
+                row = view.rowcol(line.begin())[0]
+                print(row)
+
+            # if not region.empty():
+            #     # Get the selected text
+            #     s = view.substr(region)
+            # print(region)
 
         settings = view.settings()
         print('maybe process', key)
-        if settings.get('vimprov', False):
-            VIMPROV_BUFFER.append(key)
-        else:
-            view.run_command("insert", {"characters": key})
+        VIMPROV_BUFFER.append(key)
+        view.set_status('_vimprov', '--- Vimprov: ' + ''.join(VIMPROV_BUFFER) + ' ---' )
+
+        # if settings.get('vimprov', False):
+        #     VIMPROV_BUFFER.append(key)
+        # else:
+        #     view.run_command("insert", {"characters": key})
+        #
         if key == 'i':
             do_toggle_vimprov(view)
         if key == 'h':
@@ -108,6 +149,9 @@ class ProcessVimprovArg(sublime_plugin.TextCommand):
             view.run_command('move', {'by': 'lines', 'forward': False, 'extend': False})
         if key == 'l':
             view.run_command('move', {'by': 'characters', 'forward': True, 'extend': False})
+        
+        if key == 'd':
+            action = 'delete'
 
 class VimprovCommand(sublime_plugin.TextCommand):
     def run(self, edit):
