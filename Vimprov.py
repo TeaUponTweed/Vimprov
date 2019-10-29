@@ -24,15 +24,15 @@ def _load_settings():
     return sublime.load_settings('Preferences.sublime-settings')
 
 
-class StarkCommand(sublime_plugin.WindowCommand):
-    def run(self):
-        print('running stark')
-        _set_color_scheme('Stark')
+# class StarkCommand(sublime_plugin.WindowCommand):
+#     def run(self):
+#         print('running stark')
+#         _set_color_scheme('Stark')
 
 
-class UnstarkCommand(sublime_plugin.WindowCommand):
-    def run(self):
-        _set_color_scheme('Monokai')
+# class UnstarkCommand(sublime_plugin.WindowCommand):
+#     def run(self):
+#         _set_color_scheme('Monokai')
 
 
 
@@ -67,53 +67,82 @@ def do_toggle_vimprov(view):
 
         _do_set_color_scheme_tmp(prev_theme, settings)
 
-
-# class ToggleVimprovCommand(sublime_plugin.WindowCommand):
-#     def run(self):
-#         for w in sublime.windows():
-#                 for v in w.views():
-#                     do_toggle_vimprov(v)
-# import time
-
-# class InputStateTracker(sublime_plugin.ViewEventListener):
-#     @classmethod
-#     def is_applicable(cls, settings):
-#         return True
-#         # return settings.get('vimprov', False)
-
-#     def on_query_context(self, key, operator, operand, match_all):
-#         print('wwoop', key)
-#         return True
 class VimpoveAction(object):
     def __init__(self, repeat=None, verb=None, noun=None):
         self.repeat = repeat
         self.verb = verb
         self.noun = noun
     def process_key(self, key):
-        if key in '0123456789':
-            # handle repeat
-            if self.verb is None and self.noun is None:
-                if self.repeat is None:
-                    self.repeat = [key]
-                else:
-                    self.repeat += [key]
-            else:
-                if self.noun is None:
-                    self.nous = key
-                else:
+        if not self.has_repeat() and not self.has_repeat():
+            if not self.maybe_process_repeat(key):
+                self.process_verb(key)
+        elif self.has_repeat() and not self.has_verb():
+            if not self.maybe_process_repeat(key):
+                self.process_verb(key)
+        elif self.has_verb():
+            self.process_adjective(key)
+        elif self.has_adjective():
+            self.process_noun(key)
+        else:
+            raise ValueError('We should not be here')
+        return self.fully_formed()
 
-                    raise ValueError('Cannot use {} as a verb')
+    def maybe_process_repeat(self, key):
+        if key not in '0123456789':
+            return False
+        if self.repeat is None:
+            self.repeat = [key]
+        else:
+            self.repeat += [key]
+        return True
+
+    def process_verb(self, key):
+        if key in 'gdsi':
+            self.verb = key
+        elif key in 'hjkl':
+            self.verb = key
+            self.noun = key
+        else:
+            raise ValueError('{} is not a valid verb'.format(key))
+
+    def process_adjective(self, key):
+        # TODO maybe steal from https://github.com/philippotto/Sublime-MultiEditUtils/blob/master/MultiEditUtils.py
+
+        # s - sub word  - next non [a-zA-Z0-9]
+        # w - word  - next white space
+        # t - til   - next <character>
+        # u - until - next <character> inclusive
+        # l - line  - end of line
+        # f - file  - end of file
+        # h - here  - select word under cursor
+        # H - here  - select sub word under cursor
+        # caps invert unless otherwise noted
+        if key in 'sSwWlLfFhH':
+            self.adjective = key
+            self.noun = key
+        elif key in 'tTuU':
+            self.adjective = key
+        else:
+            raise ValueError('Cannot use {} as an adjective'.format(key))
+
+    def process_noun(self, key):
+        self.noun = key
+
     def has_repeat(self):
         return self.repeat is not None
 
     def has_verb(self):
         return self.verb is not None
 
+    def has_adjective(self):
+        return self.adjective is not None
+
     def has_noun(self):
         return self.noun is not None
 
     def fully_formed(self):
-        return self.has_verb() and self.has_noun()
+        return self.has_verb() and self.has_noun() and self.has_adjective()
+
 
 VIMPROV_BUFFER = []
 class ProcessVimprovArg(sublime_plugin.TextCommand):
