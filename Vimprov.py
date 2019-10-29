@@ -35,44 +35,17 @@ def _load_settings():
 #         _set_color_scheme('Monokai')
 
 
-
-def do_toggle_vimprov(view):
-    settings = view.settings()
-    vimprov = not settings.get('vimprov', False)
-    settings.set('vimprov', vimprov)
-    if vimprov:
-        stark_color_theme_loc = settings.get('vimprov_stark_them')
-        VIMPROV_BUFFER = []
-        if stark_color_theme_loc is None:
-            stark_color_theme_loc = _get_path_to_scheme('Stark')
-            settings.set('vimprov_stark_them', stark_color_theme_loc)
-
-        prev_theme = settings.get('color_scheme')
-
-        print(prev_theme, '~>', stark_color_theme_loc)
-
-        settings.set('vimprov_prev_theme', prev_theme)
-
-        _do_set_color_scheme_tmp(stark_color_theme_loc, settings)
-
-    else:
-        view.set_status('_vimprov', '')
-        stark_color_theme_loc = settings.get('vimprov_stark_them')
-        assert stark_color_theme_loc is not None
-
-        prev_theme = settings.get('vimprov_prev_theme')
-        assert prev_theme is not None
-
-        print(stark_color_theme_loc, '~>', prev_theme)
-
-        _do_set_color_scheme_tmp(prev_theme, settings)
-
-class VimpoveAction(object):
+class VimpovAction(object):
+    current_action = None
+    last_action = None
     def __init__(self, repeat=None, verb=None, noun=None):
         self.repeat = repeat
         self.verb = verb
         self.noun = noun
+        self.record = []
+
     def process_key(self, key):
+        self.record.append(key)
         if not self.has_repeat() and not self.has_repeat():
             if not self.maybe_process_repeat(key):
                 self.process_verb(key)
@@ -97,11 +70,16 @@ class VimpoveAction(object):
         return True
 
     def process_verb(self, key):
+        # g - go
+        # d - delete
+        # s - select
+        # i - insert
         if key in 'gdsi':
             self.verb = key
         elif key in 'hjkl':
             self.verb = key
             self.noun = key
+            self.adjective = key
         else:
             raise ValueError('{} is not a valid verb'.format(key))
 
@@ -116,11 +94,14 @@ class VimpoveAction(object):
         # f - file  - end of file
         # h - here  - select word under cursor
         # H - here  - select sub word under cursor
+        # i - inside - bounded by <character> - handles brackets (){}<>
+        # I - Inside - bounded by <character> inclusive
         # caps invert unless otherwise noted
+
         if key in 'sSwWlLfFhH':
             self.adjective = key
             self.noun = key
-        elif key in 'tTuU':
+        elif key in 'tTuUiI':
             self.adjective = key
         else:
             raise ValueError('Cannot use {} as an adjective'.format(key))
@@ -144,14 +125,73 @@ class VimpoveAction(object):
         return self.has_verb() and self.has_noun() and self.has_adjective()
 
 
-VIMPROV_BUFFER = []
+def do_toggle_vimprov(view):
+    settings = view.settings()
+    vimprov = not settings.get('vimprov', False)
+    settings.set('vimprov', vimprov)
+    # global current_action
+    # global last_action
+    VimpovAction.current_action = VimpovAction()
+    VimpovAction.last_action = None
+    view.set_status('_vimprov', '')
+
+    if vimprov:
+        stark_color_theme_loc = settings.get('vimprov_stark_them')
+        if stark_color_theme_loc is None:
+            stark_color_theme_loc = _get_path_to_scheme('Stark')
+            settings.set('vimprov_stark_them', stark_color_theme_loc)
+
+        prev_theme = settings.get('color_scheme')
+
+        print(prev_theme, '~>', stark_color_theme_loc)
+
+        settings.set('vimprov_prev_theme', prev_theme)
+
+        _do_set_color_scheme_tmp(stark_color_theme_loc, settings)
+
+    else:
+        stark_color_theme_loc = settings.get('vimprov_stark_them')
+        assert stark_color_theme_loc is not None
+
+        prev_theme = settings.get('vimprov_prev_theme')
+        assert prev_theme is not None
+
+        print(stark_color_theme_loc, '~>', prev_theme)
+
+        _do_set_color_scheme_tmp(prev_theme, settings)
+
+def transform_action(action, view):
+    print('transform_action', action.verb, action.adjective, action.noun)
+    if action.verb == 'i':
+        do_toggle_vimprov(view)
+
+    def doit():
+        if action.verb == 'h':
+            view.run_command('move', {'by': 'characters', 'forward': False, 'extend': False})
+        if action.verb == 'j':
+            view.run_command('move', {'by': 'lines', 'forward': True, 'extend': False})
+        if action.verb == 'k':
+            view.run_command('move', {'by': 'lines', 'forward': False, 'extend': False})
+        if action.verb == 'l':
+            view.run_command('move', {'by': 'characters', 'forward': True, 'extend': False})
+
+    if action.repeat is None:
+        repeat = 1
+    else:
+        repeat = int(''.join(action.repeat))
+
+    for _ in range(repeat):
+        doit()
+
+
+
 class ProcessVimprovArg(sublime_plugin.TextCommand):
     def run(self, edit, key):
         view = self.view
-        for sel in view.sel():
-            for line in view.lines(sel):
-                row = view.rowcol(line.begin())[0]
-                print(row)
+        # for sel in view.sel():
+        #     for line in view.lines(sel):
+        #         row = view.rowcol(line.begin())[0]
+        #         print(row)
 
             # if not region.empty():
             #     # Get the selected text
@@ -160,27 +200,17 @@ class ProcessVimprovArg(sublime_plugin.TextCommand):
 
         settings = view.settings()
         print('maybe process', key)
-        VIMPROV_BUFFER.append(key)
-        view.set_status('_vimprov', '--- Vimprov: ' + ''.join(VIMPROV_BUFFER) + ' ---' )
-
-        # if settings.get('vimprov', False):
-        #     VIMPROV_BUFFER.append(key)
-        # else:
-        #     view.run_command("insert", {"characters": key})
-        #
-        if key == 'i':
+        view.set_status('_vimprov', '--- Vimprov: ' + ''.join(VimpovAction.current_action.record) + ' ---' )
+        try:
+            VimpovAction.current_action.process_key(key)
+            print(VimpovAction.current_action.fully_formed())
+            if VimpovAction.current_action.fully_formed():
+                transform_action(VimpovAction.current_action, view)
+                VimpovAction.last_action = current_action
+                VimpovAction.current_action = VimpovAction()
+        except ValueError as e:
+            print('exiting vimprov:', e)
             do_toggle_vimprov(view)
-        if key == 'h':
-            view.run_command('move', {'by': 'characters', 'forward': False, 'extend': False})
-        if key == 'j':
-            view.run_command('move', {'by': 'lines', 'forward': True, 'extend': False})
-        if key == 'k':
-            view.run_command('move', {'by': 'lines', 'forward': False, 'extend': False})
-        if key == 'l':
-            view.run_command('move', {'by': 'characters', 'forward': True, 'extend': False})
-        
-        if key == 'd':
-            action = 'delete'
 
 class VimprovCommand(sublime_plugin.TextCommand):
     def run(self, edit):
