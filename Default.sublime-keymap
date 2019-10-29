@@ -1,5 +1,5 @@
 [
-    { "keys": ["k","j"], "command": "vimprov" },
+    { "keys": ["ctrl+v"], "command": "vimprov" },
 
     {"keys": ["backspace"], "command": "process_vimprov_arg", "args": {"key": "<bs>"},         "context": [{"key": "setting.vimprov"}]},
     {"keys": ["delete"],    "command": "process_vimprov_arg", "args": {"key": "<del>"},        "context": [{"key": "setting.vimprov"}]},
