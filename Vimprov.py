@@ -61,15 +61,16 @@ MOVE_KEYS = 'hjklwWpPeEfF'
 class VimpovAction(object):
     current_action = None
     last_action = None
-    def __init__(self, repeat=None, verb=None, noun=None):
+    def __init__(self, repeat=None, verb=None, adjective=None, noun=None):
         self.repeat = repeat
         self.verb = verb
+        self.adjective = adjective
         self.noun = noun
         self.record = []
 
     def process_key(self, key):
         self.record.append(key)
-        if not self.has_repeat() and not self.has_repeat():
+        if not self.has_repeat() and not self.has_verb():
             if not self.maybe_process_repeat(key):
                 self.process_verb(key)
         elif self.has_repeat() and not self.has_verb():
@@ -84,6 +85,7 @@ class VimpovAction(object):
         return self.fully_formed()
 
     def maybe_process_repeat(self, key):
+        print('maybe_process_repeat', key)
         if key not in NUM_KEYS:
             return False
         if self.repeat is None:
@@ -93,10 +95,10 @@ class VimpovAction(object):
         return True
 
     def process_verb(self, key):
+        print('process_verb', key)
         # g - go
         # d - delete
         # s - select
-        # i - insert
         if key in 'gds':
             self.verb = key
         elif key in MOVE_KEYS:
@@ -107,16 +109,18 @@ class VimpovAction(object):
             raise ValueError('{} is not a valid verb'.format(key))
 
     def process_adjective(self, key):
+        print('process_adjective', key)
         # TODO maybe steal from https://github.com/philippotto/Sublime-MultiEditUtils/blob/master/MultiEditUtils.py
-        if key in 'sSwWlLfFhH':
+        if key in MOVE_KEYS:#'sSwWlLfFhH':
             self.adjective = key
             self.noun = key
-        elif key in 'tTuUiI':
+        elif key in 'tTuUhHcC':
             self.adjective = key
         else:
             raise ValueError('Cannot use {} as an adjective'.format(key))
 
     def process_noun(self, key):
+        print('process_noun', key)
         self.noun = key
 
     def has_repeat(self):
@@ -134,6 +138,11 @@ class VimpovAction(object):
     def fully_formed(self):
         return self.has_verb() and self.has_noun() and self.has_adjective()
 
+    def __repr__(self):
+        return '{} {} {}'.  format(self.verb if self.verb else '', self.adjective if self.adjective else '', self.noun if self.noun else '')
+
+    def __str__(self):
+        return self.__repr__()
 
 def do_toggle_vimprov(view):
     settings = view.settings()
@@ -175,30 +184,30 @@ def do_move(key, view, extend):
     assert key in MOVE_KEYS
     # elemental
     if key == 'h':
-        view.run_command('move', {'by': 'characters', 'forward': False, 'extend': False})
+        view.run_command('move', {'by': 'characters', 'forward': False, 'extend': extend})
     elif key == 'j':
-        view.run_command('move', {'by': 'lines', 'forward': True, 'extend': False})
+        view.run_command('move', {'by': 'lines', 'forward': True, 'extend': extend})
     elif key == 'k':
-        view.run_command('move', {'by': 'lines', 'forward': False, 'extend': False})
+        view.run_command('move', {'by': 'lines', 'forward': False, 'extend': extend})
     elif key == 'l':
-        view.run_command('move', {'by': 'characters', 'forward': True, 'extend': False})
+        view.run_command('move', {'by': 'characters', 'forward': True, 'extend': extend})
     # regions
     elif key == 'w':
-        view.run_command('move', {'by': 'words', 'forward': True, 'extend': False})
+        view.run_command('move', {'by': 'words', 'forward': True, 'extend': extend})
     elif key == 'W':
-        view.run_command('move', {'by': 'words', 'forward': False, 'extend': False})
+        view.run_command('move', {'by': 'words', 'forward': False, 'extend': extend})
     elif key == 'p':
-        view.run_command('move', {'by': 'subwords', 'forward': True, 'extend': False})
+        view.run_command('move', {'by': 'subwords', 'forward': True, 'extend': extend})
     elif key == 'P':
-        view.run_command('move', {'by': 'subwords', 'forward': False, 'extend': False})
+        view.run_command('move', {'by': 'subwords', 'forward': False, 'extend': extend})
     elif key == 'e':
-        view.run_command('move_to', {"to": "eol", "extend": False})
+        view.run_command('move_to', {'to': 'eol', 'extend': extend})
     elif key == 'E':
-        view.run_command('move_to', {"to": "bol", "extend": False})
+        view.run_command('move_to', {'to': 'bol', 'extend': extend})
     elif key == 'f':
-        view.run_command('move_to', {"to": "eof", "extend": False})
+        view.run_command('move_to', {'to': 'eof', 'extend': extend})
     elif key == 'F':
-        view.run_command('move_to', {"to": "bof", "extend": False})
+        view.run_command('move_to', {'to': 'bof', 'extend': extend})
     else:
         return False
     return True
@@ -244,6 +253,12 @@ class ProcessVimprovArg(sublime_plugin.TextCommand):
             # print(region)
         if key == 'i':
             do_toggle_vimprov(view)
+            return
+        if key == '.':
+            if VimpovAction.last_action is not None:
+                # print(VimpovAction.last_action)
+                transform_action(VimpovAction.last_action, view)
+            return
 
         settings = view.settings()
         print('maybe process', key)
@@ -257,8 +272,19 @@ class ProcessVimprovArg(sublime_plugin.TextCommand):
             print(VimpovAction.current_action.fully_formed())
             if VimpovAction.current_action.fully_formed():
                 transform_action(VimpovAction.current_action, view)
-                VimpovAction.last_action = current_action
+                # print('ere')
+                # print(VimpovAction.current_action)
+                # print(VimpovAction.last_action)
+                VimpovAction.last_action = VimpovAction(
+                    repeat=VimpovAction.current_action.repeat,
+                    noun=VimpovAction.current_action.noun,
+                    adjective=VimpovAction.current_action.adjective,
+                    verb=VimpovAction.current_action.verb,
+                )
+                # print(VimpovAction.last_action)
                 VimpovAction.current_action = VimpovAction()
+                # print(VimpovAction.last_action)
+                # print('-----')
 
 class VimprovCommand(sublime_plugin.TextCommand):
     def run(self, edit):
