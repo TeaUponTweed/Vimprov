@@ -34,6 +34,29 @@ def _load_settings():
 #     def run(self):
 #         _set_color_scheme('Monokai')
 
+NUM_KEYS = '0123456789'
+MOVE_KEYS = 'hjklwWpPeEfF'
+## elemental movement
+# h - move left
+# j - move down
+# k - move up
+# l - move right
+
+## regions
+# p - partial word  - next non [a-zA-Z0-9]
+# w - word  - next white space
+# e - end   - end of line
+# f - file  - end of file
+
+## less defined regions
+# t - til   - next <character>
+# u - until - next <character> inclusive
+# h - here  - select word under cursor
+# H - here  - select sub word under cursor
+# c - contained - bounded by <character> - handles brackets (){}<>
+# C - Contained - bounded by <character> inclusive
+
+# Note: caps invert unless otherwise specifed
 
 class VimpovAction(object):
     current_action = None
@@ -61,7 +84,7 @@ class VimpovAction(object):
         return self.fully_formed()
 
     def maybe_process_repeat(self, key):
-        if key not in '0123456789':
+        if key not in NUM_KEYS:
             return False
         if self.repeat is None:
             self.repeat = [key]
@@ -74,10 +97,10 @@ class VimpovAction(object):
         # d - delete
         # s - select
         # i - insert
-        if key in 'gdsi':
+        if key in 'gds':
             self.verb = key
-        elif key in 'hjkl':
-            self.verb = key
+        elif key in MOVE_KEYS:
+            self.verb = 'g'
             self.noun = key
             self.adjective = key
         else:
@@ -85,19 +108,6 @@ class VimpovAction(object):
 
     def process_adjective(self, key):
         # TODO maybe steal from https://github.com/philippotto/Sublime-MultiEditUtils/blob/master/MultiEditUtils.py
-
-        # s - sub word  - next non [a-zA-Z0-9]
-        # w - word  - next white space
-        # t - til   - next <character>
-        # u - until - next <character> inclusive
-        # l - line  - end of line
-        # f - file  - end of file
-        # h - here  - select word under cursor
-        # H - here  - select sub word under cursor
-        # i - inside - bounded by <character> - handles brackets (){}<>
-        # I - Inside - bounded by <character> inclusive
-        # caps invert unless otherwise noted
-
         if key in 'sSwWlLfFhH':
             self.adjective = key
             self.noun = key
@@ -129,6 +139,7 @@ def do_toggle_vimprov(view):
     settings = view.settings()
     vimprov = not settings.get('vimprov', False)
     settings.set('vimprov', vimprov)
+    settings.set('command_mode', vimprov)
     # global current_action
     # global last_action
     VimpovAction.current_action = VimpovAction()
@@ -160,20 +171,54 @@ def do_toggle_vimprov(view):
 
         _do_set_color_scheme_tmp(prev_theme, settings)
 
+def do_move(key, view, extend):
+    assert key in MOVE_KEYS
+    # elemental
+    if key == 'h':
+        view.run_command('move', {'by': 'characters', 'forward': False, 'extend': False})
+    elif key == 'j':
+        view.run_command('move', {'by': 'lines', 'forward': True, 'extend': False})
+    elif key == 'k':
+        view.run_command('move', {'by': 'lines', 'forward': False, 'extend': False})
+    elif key == 'l':
+        view.run_command('move', {'by': 'characters', 'forward': True, 'extend': False})
+    # regions
+    elif key == 'w':
+        view.run_command('move', {'by': 'words', 'forward': True, 'extend': False})
+    elif key == 'W':
+        view.run_command('move', {'by': 'words', 'forward': False, 'extend': False})
+    elif key == 'p':
+        view.run_command('move', {'by': 'subwords', 'forward': True, 'extend': False})
+    elif key == 'P':
+        view.run_command('move', {'by': 'subwords', 'forward': False, 'extend': False})
+    elif key == 'e':
+        view.run_command('move_to', {"to": "eol", "extend": False})
+    elif key == 'E':
+        view.run_command('move_to', {"to": "bol", "extend": False})
+    elif key == 'f':
+        view.run_command('move_to', {"to": "eof", "extend": False})
+    elif key == 'F':
+        view.run_command('move_to', {"to": "bof", "extend": False})
+    else:
+        return False
+    return True
+
+
 def transform_action(action, view):
     print('transform_action', action.verb, action.adjective, action.noun)
     if action.verb == 'i':
         do_toggle_vimprov(view)
 
     def doit():
-        if action.verb == 'h':
-            view.run_command('move', {'by': 'characters', 'forward': False, 'extend': False})
-        if action.verb == 'j':
-            view.run_command('move', {'by': 'lines', 'forward': True, 'extend': False})
-        if action.verb == 'k':
-            view.run_command('move', {'by': 'lines', 'forward': False, 'extend': False})
-        if action.verb == 'l':
-            view.run_command('move', {'by': 'characters', 'forward': True, 'extend': False})
+        if action.verb == 'g':
+            do_move(action.adjective, view, extend=False)
+        elif action.verb == 's':
+            if action.adjective in MOVE_KEYS:
+                do_move(action.adjective, view, extend=True)
+            else:
+                pass # TODO
+        else:
+            pass # TODO
 
     if action.repeat is None:
         repeat = 1
@@ -197,20 +242,23 @@ class ProcessVimprovArg(sublime_plugin.TextCommand):
             #     # Get the selected text
             #     s = view.substr(region)
             # print(region)
+        if key == 'i':
+            do_toggle_vimprov(view)
 
         settings = view.settings()
         print('maybe process', key)
         view.set_status('_vimprov', '--- Vimprov: ' + ''.join(VimpovAction.current_action.record) + ' ---' )
         try:
             VimpovAction.current_action.process_key(key)
+        except ValueError as e:
+            print('Vimprov error:', e)
+            VimpovAction.current_action = VimpovAction()
+        else:
             print(VimpovAction.current_action.fully_formed())
             if VimpovAction.current_action.fully_formed():
                 transform_action(VimpovAction.current_action, view)
                 VimpovAction.last_action = current_action
                 VimpovAction.current_action = VimpovAction()
-        except ValueError as e:
-            print('exiting vimprov:', e)
-            do_toggle_vimprov(view)
 
 class VimprovCommand(sublime_plugin.TextCommand):
     def run(self, edit):
