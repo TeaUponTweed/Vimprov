@@ -40,7 +40,7 @@ MOVE_KEYS = 'hjklwWpPeEfF'
 
 ## less defined regions
 # t - til   - next <character>
-# u - until - next <character> inclusive
+# NEVERMIND u - until - next <character> inclusive
 # h - here  - select word under cursor
 # H - here  - select sub word under cursor
 # c - contained - bounded by <character> - handles brackets (){}<>
@@ -215,8 +215,11 @@ def transform_action(action, view):
             if action.adjective in MOVE_KEYS:
                 do_move(action.adjective, view, extend=True)
             else:
-                pass # TODO
-        else:
+                pass # TODO handle more complicated regions
+        elif action.verb == 'd':
+            if action.adjective in MOVE_KEYS:
+                do_move(action.adjective, view, extend=False)
+                view.run_command('left_delete')
             pass # TODO
 
     if action.repeat is None:
@@ -232,6 +235,7 @@ def transform_action(action, view):
 class ProcessVimprovArg(sublime_plugin.TextCommand):
     def run(self, edit, key):
         view = self.view
+        print('handle key', key)
 
         # special handling for insert
         if key == 'i':
@@ -242,9 +246,17 @@ class ProcessVimprovArg(sublime_plugin.TextCommand):
             if VimpovAction.last_action is not None:
                 transform_action(VimpovAction.last_action, view)
             return
+        # special handling for undo
+        if key == 'u':
+            view.run_command('undo')
+            return
+        # special handling for redo
+        if key == 'U':
+            view.run_command('redo')
+            return
+
         # process regular keys
         settings = view.settings()
-        print('handle key', key)
         view.set_status('_vimprov', '--- Vimprov: ' + ''.join(VimpovAction.current_action.record) + ' ---' )
         try:
             VimpovAction.current_action.process_key(key)
