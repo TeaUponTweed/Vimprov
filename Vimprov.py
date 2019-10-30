@@ -1,7 +1,7 @@
 import sublime
 import sublime_plugin
 
-
+# helpers for chaning the theme
 def _get_path_to_scheme(scheme):
     color_schemes = sublime.find_resources("*.sublime-color-scheme")
     for color_scheme in color_schemes:
@@ -19,20 +19,10 @@ def _do_set_color_scheme_tmp(color_scheme_path, settings):
         settings = _load_settings()
     settings.set('color_scheme', color_scheme_path)
 
-
 def _load_settings():
     return sublime.load_settings('Preferences.sublime-settings')
 
 
-# class StarkCommand(sublime_plugin.WindowCommand):
-#     def run(self):
-#         print('running stark')
-#         _set_color_scheme('Stark')
-
-
-# class UnstarkCommand(sublime_plugin.WindowCommand):
-#     def run(self):
-#         _set_color_scheme('Monokai')
 
 NUM_KEYS = '0123456789'
 MOVE_KEYS = 'hjklwWpPeEfF'
@@ -144,13 +134,12 @@ class VimpovAction(object):
     def __str__(self):
         return self.__repr__()
 
+
 def do_toggle_vimprov(view):
     settings = view.settings()
     vimprov = not settings.get('vimprov', False)
     settings.set('vimprov', vimprov)
     settings.set('command_mode', vimprov)
-    # global current_action
-    # global last_action
     VimpovAction.current_action = VimpovAction()
     VimpovAction.last_action = None
     view.set_status('_vimprov', '')
@@ -179,6 +168,7 @@ def do_toggle_vimprov(view):
         print(stark_color_theme_loc, '~>', prev_theme)
 
         _do_set_color_scheme_tmp(prev_theme, settings)
+
 
 def do_move(key, view, extend):
     assert key in MOVE_KEYS
@@ -242,26 +232,19 @@ def transform_action(action, view):
 class ProcessVimprovArg(sublime_plugin.TextCommand):
     def run(self, edit, key):
         view = self.view
-        # for sel in view.sel():
-        #     for line in view.lines(sel):
-        #         row = view.rowcol(line.begin())[0]
-        #         print(row)
 
-            # if not region.empty():
-            #     # Get the selected text
-            #     s = view.substr(region)
-            # print(region)
+        # special handling for insert
         if key == 'i':
             do_toggle_vimprov(view)
             return
+        # special handling for repeat
         if key == '.':
             if VimpovAction.last_action is not None:
-                # print(VimpovAction.last_action)
                 transform_action(VimpovAction.last_action, view)
             return
-
+        # process regular keys
         settings = view.settings()
-        print('maybe process', key)
+        print('handle key', key)
         view.set_status('_vimprov', '--- Vimprov: ' + ''.join(VimpovAction.current_action.record) + ' ---' )
         try:
             VimpovAction.current_action.process_key(key)
@@ -272,77 +255,15 @@ class ProcessVimprovArg(sublime_plugin.TextCommand):
             print(VimpovAction.current_action.fully_formed())
             if VimpovAction.current_action.fully_formed():
                 transform_action(VimpovAction.current_action, view)
-                # print('ere')
-                # print(VimpovAction.current_action)
-                # print(VimpovAction.last_action)
                 VimpovAction.last_action = VimpovAction(
                     repeat=VimpovAction.current_action.repeat,
                     noun=VimpovAction.current_action.noun,
                     adjective=VimpovAction.current_action.adjective,
                     verb=VimpovAction.current_action.verb,
                 )
-                # print(VimpovAction.last_action)
                 VimpovAction.current_action = VimpovAction()
-                # print(VimpovAction.last_action)
-                # print('-----')
 
 class VimprovCommand(sublime_plugin.TextCommand):
     def run(self, edit):
         view = self.view
-        print(view.settings().get('command_mode'))
         do_toggle_vimprov(self.view)
-        return
-        # print(view)
-        # print('ere')
-        # return
-        settings = view.settings()
-        prev_theme = settings.get('color_scheme')
-        print('theme', prev_theme)
-        if 'Stark' in prev_theme:
-            _set_color_scheme('Monokai', settings)
-        else:
-            _set_color_scheme('Stark', settings)
-        # return
-        # _set_color_scheme('Stark')
-        # print('wakka', settings.get('color_scheme'))
-        # def reset_color_scheme():`
-        # _do_set_color_scheme_tmp(prev_theme, settings)
-        def set_all_windows(window, theme):
-            print('this should work', theme)
-            for v in window.views():
-                _set_color_scheme(theme, v.settings())
-
-        w = self.view.window()
-        def back_to_monokai(thing):
-            print("Done I guess")
-            set_all_windows(w, 'Monokai')
-
-
-        v = w.show_input_panel(
-            ':', '',
-            # On Change
-            None,
-            # On Done
-            lambda x: back_to_monokai(x),
-            # On Cancel
-            None # lambda: back_to_monokai()
-        )
-        set_all_windows(w, 'Stark')
-
-        # set_all_windows(w, 'Monokai')
-
-        # print('bazinga', v, view)
-        # _set_color_scheme('Stark', v.settings())
-
-        # print('ding', v.)
-        # v.run_command("stark")
-
-    def on_done(self, x, prev_theme, settings):
-        _set_color_scheme('Monokai', settings)
-
-    # def _set_color_scheme(self, color_scheme):
-
-        # print('ere')
-        # time.sleep(3)
-
-
