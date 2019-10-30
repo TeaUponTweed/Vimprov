@@ -263,7 +263,8 @@ class ProcessVimprovArg(sublime_plugin.TextCommand):
                 )
                 VimpovAction.current_action = VimpovAction()
 
-class VimprovCommand(sublime_plugin.TextCommand):
+
+class ToggleVimprovCommand(sublime_plugin.TextCommand):
     def run(self, edit):
         view = self.view
         do_toggle_vimprov(self.view)
