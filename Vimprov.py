@@ -200,7 +200,7 @@ def do_move(key, view, extend):
         view.run_command('move_to', {'to': 'bof', 'extend': extend})
 
 
-def do_move_in_the_weeds(view, til, forward, extend, include_char, erase=False):
+def do_move_in_the_weeds(view, til, forward, extend, include_char, erase=False, edit=None):
     new_regions = []
     for sel in view.sel():
         row, col = view.rowcol(sel.a)
@@ -210,7 +210,8 @@ def do_move_in_the_weeds(view, til, forward, extend, include_char, erase=False):
         if forward:
             delta = right.find(til)
         else:
-            delta = right.rfind(til)
+            delta = left.rfind(til)
+            delta = len(left) - delta
 
 
         delta = max(delta, 0)
@@ -225,8 +226,11 @@ def do_move_in_the_weeds(view, til, forward, extend, include_char, erase=False):
             else:
                 region = sublime.Region(sel.a, sel.a)
         else:
-            if include_char:
+            if include_char and forward:
                 delta += 1
+            if not include_char and not forward:
+                delta -= 1
+
             if extend:
                 if forward:
                     region = sublime.Region(sel.a, sel.b+delta)
@@ -242,7 +246,11 @@ def do_move_in_the_weeds(view, til, forward, extend, include_char, erase=False):
     view.sel().clear()
     for region in new_regions:
         view.sel().add(region)
-
+    if erase:
+        assert edit is not None
+        for sel in view.sel():
+            if not sel.empty():
+                view.erase(edit, sublime.Region(sel.a, sel.b))
 
 def transform_action(action, view, edit):
     print('transform_action', action.verb, action.adjective, action.noun)
@@ -250,6 +258,44 @@ def transform_action(action, view, edit):
         do_toggle_vimprov(view)
 
     def doit():
+        assert action.verb in 'gsd'
+        extend = action.verb in 'sd'
+        forward = action.adjective in 'tu'
+        include_char = action.adjective in 'tC'
+        erase = action.verb == 'd'
+
+        if action.adjective in MOVE_KEYS:
+            do_move(action.adjective, view, extend=False)
+        elif action.adjective in 'tT':
+            do_move_in_the_weeds(view=view, til=action.noun, forward=forward, extend=extend, include_char=include_char, edit=edit, erase=erase)
+        elif action.adjective in 'uU':
+            do_move_in_the_weeds(view=view, til=action.noun, forward=forward, extend=extend, include_char=include_char, edit=edit, erase=erase)
+        elif action.adjective in 'cC':
+            if not extend:
+                print('contained implies extend')
+            if action.noun in '()':
+                left_char = '('
+                right_char = ')'
+            elif action.noun in '<>':
+                left_char = '<'
+                right_char = '>'
+            elif action.noun in '[]':
+                left_char = '['
+                right_char = ']'
+            elif action.noun in '{}':
+                left_char = '{'
+                right_char = '}'
+            else:
+                left_char = right_char = action.noun
+
+            do_move_in_the_weeds(view=view, til=right_char, forward=True, extend=True, include_char=include_char, edit=edit, erase=erase)
+            do_move_in_the_weeds(view=view, til=left_char, forward=False, extend=True, include_char=include_char, edit=edit, erase=erase)
+        else:
+            print('{} is not a valid adjective'.format(action.adjective))
+
+
+        '''
+
         # complicated_move_kwargs = {}
         if action.verb == 'g':
             if action.adjective in MOVE_KEYS:
@@ -274,7 +320,7 @@ def transform_action(action, view, edit):
                 do_move(action.adjective, view, extend=True)
                 view.run_command('left_delete')
             pass # TODO
-
+        '''
     if action.repeat is None:
         repeat = 1
     else:
@@ -299,6 +345,11 @@ class ProcessVimprovArg(sublime_plugin.TextCommand):
             if VimpovAction.last_action is not None:
                 transform_action(VimpovAction.last_action, view, edit)
             return
+
+        # TODO
+        # * clear selection for verb x
+        # * dd to delete selection
+
         # # special handling for undo
         # if key == 'u':
         #     view.run_command('undo')
