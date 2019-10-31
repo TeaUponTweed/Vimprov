@@ -218,7 +218,7 @@ def transform_action(action, view):
                 pass # TODO handle more complicated regions
         elif action.verb == 'd':
             if action.adjective in MOVE_KEYS:
-                do_move(action.adjective, view, extend=False)
+                do_move(action.adjective, view, extend=True)
                 view.run_command('left_delete')
             pass # TODO
 
