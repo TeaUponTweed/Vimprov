@@ -40,7 +40,7 @@ MOVE_KEYS = 'hjklwWpPeEfF'
 
 ## less defined regions
 # t - til   - next <character>
-# NEVERMIND u - until - next <character> inclusive
+# u - until - next <character> inclusive
 # h - here  - select word under cursor
 # H - here  - select sub word under cursor
 # c - contained - bounded by <character> - handles brackets (){}<>
@@ -66,7 +66,7 @@ class VimpovAction(object):
         elif self.has_repeat() and not self.has_verb():
             if not self.maybe_process_repeat(key):
                 self.process_verb(key)
-        elif self.has_verb():
+        elif self.has_verb() and not self.has_adjective():
             self.process_adjective(key)
         elif self.has_adjective():
             self.process_noun(key)
@@ -198,9 +198,50 @@ def do_move(key, view, extend):
         view.run_command('move_to', {'to': 'eof', 'extend': extend})
     elif key == 'F':
         view.run_command('move_to', {'to': 'bof', 'extend': extend})
-    else:
-        return False
-    return True
+
+
+def do_move_in_the_weeds(view, til, forward, extend, include_char):
+    new_regions = []
+    for sel in view.sel():
+        row, col = view.rowcol(sel.a)
+        line = view.substr(view.line(view.text_point(row, 0)))
+        left = line[:col]
+        right = line[col:]
+        if forward:
+            delta = right.find(til)
+        else:
+            delta = right.rfind(til)
+
+
+        delta = max(delta, 0)
+        print('------')
+        print(left)
+        print(right)
+        print(row, col, delta)
+        print('------')
+        if delta == -1 or delta == 0:
+            if extend:
+                region = sublime.Region(sel.a, sel.a)
+            else:
+                region = sublime.Region(sel.a, sel.a)
+        else:
+            if include_char:
+                delta += 1
+            if extend:
+                if forward:
+                    region = sublime.Region(sel.a, sel.b+delta)
+                else:
+                    region = sublime.Region(sel.a-delta, sel.b)
+            else:
+                if forward:
+                    region = sublime.Region(sel.a+delta, sel.a+delta)
+                else:
+                    region = sublime.Region(sel.a-delta, sel.a-delta)
+        new_regions.append(region)
+
+    view.sel().clear()
+    for region in new_regions:
+        view.sel().add(region)
 
 
 def transform_action(action, view):
@@ -209,12 +250,22 @@ def transform_action(action, view):
         do_toggle_vimprov(view)
 
     def doit():
+        # complicated_move_kwargs = {}
         if action.verb == 'g':
-            do_move(action.adjective, view, extend=False)
+            if action.adjective in MOVE_KEYS:
+                do_move(action.adjective, view, extend=False)
+            elif action.adjective in 'tT':
+                do_move_in_the_weeds(view, action.noun, forward=action.adjective=='t', extend=False, include_char=True)
+            elif action.adjective in 'uU':
+                do_move_in_the_weeds(view, action.noun, forward=action.adjective=='u', extend=False, include_char=False)
+            else:
+                print('{} is not a valid go command'.format(action.adjective))
+
         elif action.verb == 's':
             if action.adjective in MOVE_KEYS:
                 do_move(action.adjective, view, extend=True)
-            else:
+            elif action.adjective == 't':
+                do_move_in_the_weeds(view, action.noun, True, True)
                 pass # TODO handle more complicated regions
         elif action.verb == 'd':
             if action.adjective in MOVE_KEYS:
@@ -246,14 +297,51 @@ class ProcessVimprovArg(sublime_plugin.TextCommand):
             if VimpovAction.last_action is not None:
                 transform_action(VimpovAction.last_action, view)
             return
-        # special handling for undo
-        if key == 'u':
-            view.run_command('undo')
-            return
-        # special handling for redo
-        if key == 'U':
-            view.run_command('redo')
-            return
+        # # special handling for undo
+        # if key == 'u':
+        #     view.run_command('undo')
+        #     return
+        # # special handling for redo
+        # if key == 'U':
+        #     view.run_command('redo')
+        #     return
+        '''
+        sels = []
+        for sel in view.sel():
+            sels.append(sublime.Region(sel.a, sel.b+5))
+            row, col = view.rowcol(sel.a)
+            # print('###', row, col)
+            # left = view.substr(view.line(view.text_point(row, 0)))
+            # right = view.substr(view.line(view.text_point(row, 0)))
+            line = view.substr(view.line(view.text_point(row, 0)))
+            left = line[:col-1]
+            right = line[col-1:]
+            print('###')
+            print(left)
+            print(right)
+            print('###')
+            sel.a  += 5
+        view.sel().clear()
+        # view.sel =s
+        for r in sels:
+            view.sel().add(r)
+            # print('wakka', sel.a, sel.b)
+            # for line in view.lines(sel):
+                # pass
+                # print('ere', line)
+                # print(view.rowcol(line.begin()))
+                # row = view.rowcol(line.begin())[0]
+                # col = view.rowcol(line)[1]
+
+                # s = view.substr(view.line(view.text_point(row, 0)))
+                # print(s)
+                # print(thisrow)
+                # if thisrow in self.rows:
+                #     continue
+                # if not self.add_rows(thisrow):
+                #     continue
+
+        '''
 
         # process regular keys
         settings = view.settings()
