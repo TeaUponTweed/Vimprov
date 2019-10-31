@@ -200,7 +200,7 @@ def do_move(key, view, extend):
         view.run_command('move_to', {'to': 'bof', 'extend': extend})
 
 
-def do_move_in_the_weeds(view, til, forward, extend, include_char):
+def do_move_in_the_weeds(view, til, forward, extend, include_char, erase=False):
     new_regions = []
     for sel in view.sel():
         row, col = view.rowcol(sel.a)
@@ -244,7 +244,7 @@ def do_move_in_the_weeds(view, til, forward, extend, include_char):
         view.sel().add(region)
 
 
-def transform_action(action, view):
+def transform_action(action, view, edit):
     print('transform_action', action.verb, action.adjective, action.noun)
     if action.verb == 'i':
         do_toggle_vimprov(view)
@@ -264,9 +264,11 @@ def transform_action(action, view):
         elif action.verb == 's':
             if action.adjective in MOVE_KEYS:
                 do_move(action.adjective, view, extend=True)
-            elif action.adjective == 't':
-                do_move_in_the_weeds(view, action.noun, True, True)
-                pass # TODO handle more complicated regions
+            elif action.adjective in 'tT':
+                do_move_in_the_weeds(view, action.noun, forward=action.adjective=='t', extend=True, include_char=True)
+            elif action.adjective in 'uU':
+                do_move_in_the_weeds(view, action.noun, forward=action.adjective=='u', extend=True, include_char=False)
+
         elif action.verb == 'd':
             if action.adjective in MOVE_KEYS:
                 do_move(action.adjective, view, extend=True)
@@ -295,7 +297,7 @@ class ProcessVimprovArg(sublime_plugin.TextCommand):
         # special handling for repeat
         if key == '.':
             if VimpovAction.last_action is not None:
-                transform_action(VimpovAction.last_action, view)
+                transform_action(VimpovAction.last_action, view, edit)
             return
         # # special handling for undo
         # if key == 'u':
@@ -354,7 +356,7 @@ class ProcessVimprovArg(sublime_plugin.TextCommand):
         else:
             print(VimpovAction.current_action.fully_formed())
             if VimpovAction.current_action.fully_formed():
-                transform_action(VimpovAction.current_action, view)
+                transform_action(VimpovAction.current_action, view, edit)
                 VimpovAction.last_action = VimpovAction(
                     repeat=VimpovAction.current_action.repeat,
                     noun=VimpovAction.current_action.noun,
