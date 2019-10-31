@@ -106,6 +106,9 @@ class VimpovAction(object):
             self.noun = key
         elif key in 'tTuUhHcC':
             self.adjective = key
+        elif key in 'd': # delete selection
+            self.adjective = key
+            self.noun = key
         else:
             raise ValueError('Cannot use {} as an adjective'.format(key))
 
@@ -248,9 +251,12 @@ def do_move_in_the_weeds(view, til, forward, extend, include_char, erase=False, 
         view.sel().add(region)
     if erase:
         assert edit is not None
-        for sel in view.sel():
-            if not sel.empty():
-                view.erase(edit, sublime.Region(sel.a, sel.b))
+        delete_nonempty_selections(view, edit)
+
+def delete_nonempty_selections(view, edit):
+    for sel in view.sel():
+        if not sel.empty():
+            view.erase(edit, sublime.Region(sel.a, sel.b))
 
 def transform_action(action, view, edit):
     print('transform_action', action.verb, action.adjective, action.noun)
@@ -263,9 +269,14 @@ def transform_action(action, view, edit):
         forward = action.adjective in 'tu'
         include_char = action.adjective in 'tC'
         erase = action.verb == 'd'
+        if action.verb == 'd' and action.adjective == 'd':
+            delete_nonempty_selections(view, edit)
 
         if action.adjective in MOVE_KEYS:
             do_move(action.adjective, view, extend=extend)
+            if erase:
+                delete_nonempty_selections(view, edit)
+
         elif action.adjective in 'tT':
             do_move_in_the_weeds(view=view, til=action.noun, forward=forward, extend=extend, include_char=include_char, edit=edit, erase=erase)
         elif action.adjective in 'uU':
