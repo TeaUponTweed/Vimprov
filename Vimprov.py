@@ -265,7 +265,7 @@ def transform_action(action, view, edit):
         erase = action.verb == 'd'
 
         if action.adjective in MOVE_KEYS:
-            do_move(action.adjective, view, extend=False)
+            do_move(action.adjective, view, extend=extend)
         elif action.adjective in 'tT':
             do_move_in_the_weeds(view=view, til=action.noun, forward=forward, extend=extend, include_char=include_char, edit=edit, erase=erase)
         elif action.adjective in 'uU':
@@ -293,34 +293,6 @@ def transform_action(action, view, edit):
         else:
             print('{} is not a valid adjective'.format(action.adjective))
 
-
-        '''
-
-        # complicated_move_kwargs = {}
-        if action.verb == 'g':
-            if action.adjective in MOVE_KEYS:
-                do_move(action.adjective, view, extend=False)
-            elif action.adjective in 'tT':
-                do_move_in_the_weeds(view, action.noun, forward=action.adjective=='t', extend=False, include_char=True)
-            elif action.adjective in 'uU':
-                do_move_in_the_weeds(view, action.noun, forward=action.adjective=='u', extend=False, include_char=False)
-            else:
-                print('{} is not a valid go command'.format(action.adjective))
-
-        elif action.verb == 's':
-            if action.adjective in MOVE_KEYS:
-                do_move(action.adjective, view, extend=True)
-            elif action.adjective in 'tT':
-                do_move_in_the_weeds(view, action.noun, forward=action.adjective=='t', extend=True, include_char=True)
-            elif action.adjective in 'uU':
-                do_move_in_the_weeds(view, action.noun, forward=action.adjective=='u', extend=True, include_char=False)
-
-        elif action.verb == 'd':
-            if action.adjective in MOVE_KEYS:
-                do_move(action.adjective, view, extend=True)
-                view.run_command('left_delete')
-            pass # TODO
-        '''
     if action.repeat is None:
         repeat = 1
     else:
@@ -349,6 +321,7 @@ class ProcessVimprovArg(sublime_plugin.TextCommand):
         # TODO
         # * clear selection for verb x
         # * dd to delete selection
+        # * why doesn't undo work?
 
         # # special handling for undo
         # if key == 'u':
@@ -358,43 +331,6 @@ class ProcessVimprovArg(sublime_plugin.TextCommand):
         # if key == 'U':
         #     view.run_command('redo')
         #     return
-        '''
-        sels = []
-        for sel in view.sel():
-            sels.append(sublime.Region(sel.a, sel.b+5))
-            row, col = view.rowcol(sel.a)
-            # print('###', row, col)
-            # left = view.substr(view.line(view.text_point(row, 0)))
-            # right = view.substr(view.line(view.text_point(row, 0)))
-            line = view.substr(view.line(view.text_point(row, 0)))
-            left = line[:col-1]
-            right = line[col-1:]
-            print('###')
-            print(left)
-            print(right)
-            print('###')
-            sel.a  += 5
-        view.sel().clear()
-        # view.sel =s
-        for r in sels:
-            view.sel().add(r)
-            # print('wakka', sel.a, sel.b)
-            # for line in view.lines(sel):
-                # pass
-                # print('ere', line)
-                # print(view.rowcol(line.begin()))
-                # row = view.rowcol(line.begin())[0]
-                # col = view.rowcol(line)[1]
-
-                # s = view.substr(view.line(view.text_point(row, 0)))
-                # print(s)
-                # print(thisrow)
-                # if thisrow in self.rows:
-                #     continue
-                # if not self.add_rows(thisrow):
-                #     continue
-
-        '''
 
         # process regular keys
         settings = view.settings()
