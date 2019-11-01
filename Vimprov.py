@@ -132,7 +132,7 @@ class VimpovAction(object):
         return self.has_verb() and self.has_noun() and self.has_adjective()
 
     def __repr__(self):
-        return '{} {} {}'.  format(self.verb if self.verb else '', self.adjective if self.adjective else '', self.noun if self.noun else '')
+        return '{} {} {}'.format(self.verb if self.verb else '', self.adjective if self.adjective else '', self.noun if self.noun else '')
 
     def __str__(self):
         return self.__repr__()
