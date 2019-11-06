@@ -325,9 +325,47 @@ def transform_action(action, view, edit):
     for _ in range(repeat):
         doit()
 
+import re
 
+
+def do_regex_forward_search(view, regex):
+    new_regions = []
+    for sel in view.sel():
+        # set side of selection based on direction
+        row, col = view.rowcol(sel.b)
+
+        # do find
+        line = view.substr(view.line(view.text_point(row, 0)))
+        right = line[col:]
+        # print(regex, right)
+        match = re.search(regex, right)
+        # print(match)
+        if match is not None:
+            a = sel.b + match.start()
+            b = sel.b + match.end()
+            print(a, b)
+            new_regions.append(sublime.Region(a, b))
+        else:
+            new_regions.append(sublime.Region(sel.a, sel.b))
+
+    view.sel().clear()
+    for region in new_regions:
+        print('***', region)
+        view.sel().add(region)
+
+class VimprovRegexSearchCommand(sublime_plugin.TextCommand):
+    def run(self, edit, regex):
+        do_regex_forward_search(self.view, regex)
 
 class ProcessVimprovArg(sublime_plugin.TextCommand):
+    # def __init__(self, arg):
+    #     sublime_plugin.TextCommand.__init__(self, arg)
+    #     self.regex = None
+
+
+    def do_regex_search(self, regex):
+        self.view.run_command("vimprov_regex_search", {"regex": regex})
+
     def run(self, edit, key):
         view = self.view
         print('handle key', key)
@@ -341,7 +379,16 @@ class ProcessVimprovArg(sublime_plugin.TextCommand):
             if VimpovAction.last_action is not None:
                 transform_action(VimpovAction.last_action, view, edit)
             return
-
+        # special handling for /
+        if key == '/' and not VimpovAction.current_action.has_verb():
+            w = self.view.window()
+            w.show_input_panel(
+                ':', '',
+                self.do_regex_search,
+                None,
+                None,
+            )
+            return
         # TODO
         # * clear selection for verb x
         # * dd to delete selection
@@ -380,5 +427,4 @@ class ProcessVimprovArg(sublime_plugin.TextCommand):
 class ToggleVimprovCommand(sublime_plugin.TextCommand):
     def run(self, edit):
         view = self.view
-        print('ere')
         do_toggle_vimprov(self.view)
