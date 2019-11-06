@@ -1,5 +1,5 @@
 [
-    { "keys": ["alt+space"], "command": "vimprov" },
+    { "keys": ["ctrl+shift+v"], "command": "toggle_vimprov" },
 
     {"keys": ["backspace"], "command": "process_vimprov_arg", "args": {"key": "<bs>"},         "context": [{"key": "setting.vimprov"}]},
     {"keys": ["delete"],    "command": "process_vimprov_arg", "args": {"key": "<del>"},        "context": [{"key": "setting.vimprov"}]},
@@ -16,7 +16,7 @@
     {"keys": ["tab"],       "command": "process_vimprov_arg", "args": {"key": "<tab>"},        "context": [{"key": "setting.vimprov"}]},
     {"keys": ["up"],        "command": "process_vimprov_arg", "args": {"key": "<up>"},         "context": [{"key": "setting.vimprov"}]},
 
-    {"keys": [" "],         "command": "process_vimprov_arg", "args": {"key": "<space>"},  "context": [{"key": "setting.vimprov"}]},
+    {"keys": [" "],         "command": "process_vimprov_arg", "args": {"key": " "},        "context": [{"key": "setting.vimprov"}]},
     {"keys": ["!"],         "command": "process_vimprov_arg", "args": {"key": "!"},        "context": [{"key": "setting.vimprov"}]},
     {"keys": ["#"],         "command": "process_vimprov_arg", "args": {"key": "#"},        "context": [{"key": "setting.vimprov"}]},
     {"keys": ["$"],         "command": "process_vimprov_arg", "args": {"key": "$"},        "context": [{"key": "setting.vimprov"}]},
@@ -43,7 +43,7 @@
     {"keys": ["9"],         "command": "process_vimprov_arg", "args": {"key": "9"},        "context": [{"key": "setting.vimprov"}]},
     {"keys": [":"],         "command": "process_vimprov_arg", "args": {"key": ":"},        "context": [{"key": "setting.vimprov"}]},
     {"keys": [";"],         "command": "process_vimprov_arg", "args": {"key": ";"},        "context": [{"key": "setting.vimprov"}]},
-    {"keys": ["<"],         "command": "process_vimprov_arg", "args": {"key": "<lt>"},     "context": [{"key": "setting.vimprov"}]},
+    {"keys": ["<"],         "command": "process_vimprov_arg", "args": {"key": "<"},        "context": [{"key": "setting.vimprov"}]},
     {"keys": ["="],         "command": "process_vimprov_arg", "args": {"key": "="},        "context": [{"key": "setting.vimprov"}]},
     {"keys": [">"],         "command": "process_vimprov_arg", "args": {"key": ">"},        "context": [{"key": "setting.vimprov"}]},
     {"keys": ["?"],         "command": "process_vimprov_arg", "args": {"key": "?"},        "context": [{"key": "setting.vimprov"}]},
@@ -76,7 +76,7 @@
     {"keys": ["Z"],         "command": "process_vimprov_arg", "args": {"key": "Z"},        "context": [{"key": "setting.vimprov"}]},
     {"keys": ["["],         "command": "process_vimprov_arg", "args": {"key": "["},        "context": [{"key": "setting.vimprov"}]},
     {"keys": ["\""],        "command": "process_vimprov_arg", "args": {"key": "\""},       "context": [{"key": "setting.vimprov"}]},
-    {"keys": ["\\"],        "command": "process_vimprov_arg", "args": {"key": "<bslash>"}, "context": [{"key": "setting.vimprov"}]},
+    {"keys": ["\\"],        "command": "process_vimprov_arg", "args": {"key": "\\"},       "context": [{"key": "setting.vimprov"}]},
     {"keys": ["]"],         "command": "process_vimprov_arg", "args": {"key": "]"},        "context": [{"key": "setting.vimprov"}]},
     {"keys": ["^"],         "command": "process_vimprov_arg", "args": {"key": "^"},        "context": [{"key": "setting.vimprov"}]},
     {"keys": ["_"],         "command": "process_vimprov_arg", "args": {"key": "_"},        "context": [{"key": "setting.vimprov"}]},
@@ -108,7 +108,7 @@
     {"keys": ["y"],         "command": "process_vimprov_arg", "args": {"key": "y"},        "context": [{"key": "setting.vimprov"}]},
     {"keys": ["z"],         "command": "process_vimprov_arg", "args": {"key": "z"},        "context": [{"key": "setting.vimprov"}]},
     {"keys": ["{"],         "command": "process_vimprov_arg", "args": {"key": "{"},        "context": [{"key": "setting.vimprov"}]},
-    {"keys": ["|"],         "command": "process_vimprov_arg", "args": {"key": "<bar>"},    "context": [{"key": "setting.vimprov"}]},
+    {"keys": ["|"],         "command": "process_vimprov_arg", "args": {"key": "|>"},    "context": [{"key": "setting.vimprov"}]},
     {"keys": ["}"],         "command": "process_vimprov_arg", "args": {"key": "}"},        "context": [{"key": "setting.vimprov"}]},
     {"keys": ["~"],         "command": "process_vimprov_arg", "args": {"key": "~"},        "context": [{"key": "setting.vimprov"}]},
 ]
