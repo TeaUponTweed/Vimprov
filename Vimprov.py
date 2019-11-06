@@ -206,34 +206,46 @@ def do_move(key, view, extend):
 def do_move_in_the_weeds(view, til, forward, extend, include_char, erase=False, edit=None):
     new_regions = []
     for sel in view.sel():
-        row, col = view.rowcol(sel.a)
+        # set side of selection based on direction
+        if forward:
+            row, col = view.rowcol(sel.b)
+        else:
+            row, col = view.rowcol(sel.a)
+        # do find
         line = view.substr(view.line(view.text_point(row, 0)))
         left = line[:col]
         right = line[col:]
         if forward:
             delta = right.find(til)
+            row, col = view.rowcol(sel.b)
         else:
             delta = left.rfind(til)
             delta = len(left) - delta
-
-
+            row, col = view.rowcol(sel.a)
+        # ensure that delta is positive
         delta = max(delta, 0)
-        print('------')
-        print(left)
-        print(right)
-        print(row, col, delta)
-        print('------')
-        if delta == -1 or delta == 0:
+
+        if delta == -1 or delta == 0: # handle no movement
             if extend:
-                region = sublime.Region(sel.a, sel.a)
+                region = sublime.Region(sel.a, sel.b)
             else:
                 region = sublime.Region(sel.a, sel.a)
-        else:
-            if include_char and forward:
+        else: # handle movement
+            if include_char and forward: # off-by-ones with include chat
                 delta += 1
             if not include_char and not forward:
                 delta -= 1
 
+            # ensure that selection stays on line
+            if forward:
+                moved_row, _ = view.rowcol(sel.b+delta)
+            else:
+                moved_row, _ = view.rowcol(sel.a-delta)
+
+            if moved_row != row:
+                delta = 0
+
+            # move selection
             if extend:
                 if forward:
                     region = sublime.Region(sel.a, sel.b+delta)
@@ -246,6 +258,7 @@ def do_move_in_the_weeds(view, til, forward, extend, include_char, erase=False, 
                     region = sublime.Region(sel.a-delta, sel.a-delta)
         new_regions.append(region)
 
+    # clear and recreate selections
     view.sel().clear()
     for region in new_regions:
         view.sel().add(region)
@@ -367,4 +380,5 @@ class ProcessVimprovArg(sublime_plugin.TextCommand):
 class ToggleVimprovCommand(sublime_plugin.TextCommand):
     def run(self, edit):
         view = self.view
+        print('ere')
         do_toggle_vimprov(self.view)
